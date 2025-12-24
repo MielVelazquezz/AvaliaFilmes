@@ -65,6 +65,17 @@ void desenharCaixa(int x, int y, int largura, int altura){
     printf("%c", 188);
 }
 
+int emailValido(char email[90]){
+    int tam = strlen(email);
+
+    if (tam < 10) return 0;
+    if (strcmp(&email[tam - 10], "@gmail.com") == 0) return 1;
+    if (strcmp(&email[tam - 12], "@hotmail.com") == 0) return 1;
+
+    return 0;
+}
+
+
 int buscaEmail(FILE *arq, char auxEmail[90]){
     struct Usuario u;
     int size = sizeof(struct Usuario);
@@ -78,7 +89,7 @@ int buscaEmail(FILE *arq, char auxEmail[90]){
 void addUser(FILE *arq) {
     struct Usuario u;
     char auxEmail[90];
-    int i, size = sizeof(struct Usuario);
+    int i, size = sizeof(struct Usuario), emailOk = 0;
 
     if (arq == NULL) arq = fopen("usuarios.dat", "wb+");
     fflush(arq);
@@ -135,25 +146,39 @@ void addUser(FILE *arq) {
         gotoxy(78, 14); printf("                                               ");
     }
 
-    gotoxy(82,10);  gets(auxEmail);
-    while(strlen(auxEmail) == 0){
-        gotoxy(78, 14);
-        setColor(VERMELHO);
-        printf("Erro: Email nao pode ser vazio! tente novamente.");
+    do {
+        gotoxy(82,10);
+        gets(auxEmail);
+
+        if (strlen(auxEmail) == 0){
+            gotoxy(78,14);
+            setColor(VERMELHO);
+            printf("Erro: Email nao pode ser vazio!");
+            emailOk = 0;
+        }
+        else if (!emailValido(auxEmail)){
+            gotoxy(78,14);
+            setColor(VERMELHO);
+            printf("Erro: Use @gmail.com ou @hotmail.com");
+            emailOk = 0;
+        }
+        else if (buscaEmail(arq, auxEmail) != -1){
+            gotoxy(78,14);
+            setColor(VERMELHO);
+            printf("Erro: Email ja cadastrado!");
+            emailOk = 0;
+        }
+        else{
+            emailOk = 1; // email valido
+        }
+
         setColor(BRANCO);
-        gotoxy(82,10);  gets(auxEmail);
-        gotoxy(78, 14); printf("                                                ");
-    }
-    if (buscaEmail(arq, auxEmail) != -1){
-        gotoxy(79,16);
-        setColor(VERMELHO);
-        printf("Erro: Email ja cadastrado! tente novamente.");
-        gotoxy(79,21);
-        setColor(AMARELINHO);
-        system("pause");
-        setColor(BRANCO);
-        addUser(arq);
-    }
+        Sleep(1500);
+        gotoxy(78,14);
+        printf("                                               ");
+
+    } while (emailOk == 0);
+
 
     gotoxy(82,11);  gets(u.senha);
     while(strlen(u.senha) < 6){
@@ -187,64 +212,187 @@ void addUser(FILE *arq) {
     setColor(BRANCO);
 }
 
+void limparArea(int x, int y, int largura, int altura){
+    int i, j;
+    for (i = 0; i < altura; i++){
+        gotoxy(x, y + i);
+        for (j = 0; j < largura; j++)
+            printf(" ");
+    }
+}
+
 void listUsers(FILE *arq) {
     struct Usuario u;
-    int linha = 11;
+    int i, size = sizeof(struct Usuario);
 
+    int linhaInicial=9, linhaFinal=19, linhaAtual;
     if (arq == NULL) return;
 
     system("cls");
-    desenharCaixa(10, 3, 70, 20);
-    gotoxy(40,5); printf("LISTA DE USUARIOS");
+    desenharCaixa(20, 3, 50, 20);
 
-    gotoxy(12,9);
-    printf("ID   Nome                     Email                       Data");
+    gotoxy(37, 5);
+    printf("GERENCIAR USUARIOS");
+
+    gotoxy(20, 7);
+    printf("%c", 204);
+    for (i = 0; i <= 47; i++){
+        gotoxy(21 + i, 7);
+        printf("%c", 205);
+    }
+    printf("%c", 185);
+
+    gotoxy(31, 9);
+    printf("1 - Cadastrar Usuario");
+
+    gotoxy(31, 10);
+    setColor(LARANJA);
+    printf("2 - Listar Usuarios");
+    setColor(BRANCO);
+
+    gotoxy(31, 11); printf("3 - Buscar Usuario por nome");
+    gotoxy(31, 12); printf("4 - Buscar Usuario por ID");
+    gotoxy(31, 13); printf("5 - Editar Usuario");
+    gotoxy(31, 14); printf("6 - Deletar Usuario");
+    gotoxy(31, 15); printf("0 - Voltar ao Menu Principal");
+    desenharCaixa(69, 3, 80, 20);
+
+    gotoxy(97, 5);
+    printf("LISTA DE USUARIOS");
+
+    gotoxy(71, 7);
+    printf("ID   Nome                     Email                       Data de Nasc.");
+
+    gotoxy(71, 8);
+    for (i = 0; i < 76; i++) printf("%c", 205);
 
     rewind(arq);
-    fread(&u, sizeof(u), 1, arq);
-    while (!feof(arq) && u.ativo) {
-            gotoxy(12, linha++);
-            setColor(5);
-            printf("%-4d %-25s %-25s %-12s", u.id, u.nome, u.email, u.data_nascimento);
+    linhaAtual = linhaInicial;
+
+    while (fread(&u, size, 1, arq) == 1){
+        if (!u.ativo) continue;
+
+        gotoxy(71, linhaAtual++);
+        printf("%-4d %-24s %-27s %-12s",u.id, u.nome, u.email, u.data_nascimento);
+
+        if (linhaAtual > linhaFinal){
+            gotoxy(92, 21);
+            setColor(AMARELINHO);
+            printf("Qualquer tecla -> proxima pagina");
             setColor(BRANCO);
-            fread(&u, sizeof(u), 1, arq);
+            getch();
+
+            limparArea(71, linhaInicial, 76, linhaFinal - linhaInicial + 1);
+
+            gotoxy(92, 21);
+            printf("                      ");
+
+            linhaAtual = linhaInicial;
+        }
     }
 
-    gotoxy(30, linha + 2);
+    gotoxy(92, 21);
+    setColor(AMARELINHO);
     system("pause");
+    setColor(BRANCO);
 }
+
+
 
 void buscaNome(FILE *arq) {
     struct Usuario u;
     char nomeBusca[50];
+    int i, size = sizeof(struct Usuario);
+
+    int linhaInicial = 9;
+    int linhaFinal   = 19;
+    int linhaAtual;
+    int encontrou = 0;
+
+    if (arq == NULL) return;
 
     system("cls");
-    desenharCaixa(20, 3, 50, 10);
-    gotoxy(35, 5); printf("BUSCAR USUARIO POR NOME");
-    gotoxy(25, 7); printf("Nome: ");
+    desenharCaixa(20, 3, 50, 20);
+    gotoxy(37, 5);
+    printf("GERENCIAR USUARIOS");
+
+    gotoxy(20, 7);
+    printf("%c", 204);
+    for (i = 0; i <= 47; i++){
+        gotoxy(21 + i, 7);
+        printf("%c", 205);
+    }
+    printf("%c", 185);
+
+    gotoxy(31, 9);  printf("1 - Cadastrar Usuario");
+    gotoxy(31, 10); printf("2 - Listar Usuarios");
+
+    gotoxy(31, 11);
+    setColor(LARANJA);
+    printf("3 - Buscar Usuario por nome");
+    setColor(BRANCO);
+
+    gotoxy(31, 12); printf("4 - Buscar Usuario por ID");
+    gotoxy(31, 13); printf("5 - Editar Usuario");
+    gotoxy(31, 14); printf("6 - Deletar Usuario");
+    gotoxy(31, 15); printf("0 - Voltar ao Menu Principal");
+
+    /* ===== CAIXA RESULTADOS ===== */
+    desenharCaixa(69, 3, 80, 20);
+
+    gotoxy(102, 5);
+    printf("BUSCAR POR NOME");
+
+    gotoxy(71, 7);
+    printf("Nome buscado: ");
     gets(nomeBusca);
 
-    rewind(arq);
-    fread(&u, sizeof(u), 1, arq);
-    while (!feof(arq) && strcmp(u.nome, nomeBusca) != 0 && u.ativo) fread(&u, sizeof(u), 1, arq);
+    gotoxy(71, 8);
+    printf("ID   Nome                     Email                       Data de Nasc.");
 
-    if (!feof(arq) && strcmp(u.nome, nomeBusca) == 0) {
-        gotoxy(25, 9);
-        printf("Usuario encontrado:");
-        gotoxy(25, 11);
-        printf("Nome: %s", u.nome);
-        gotoxy(25, 12);
-        printf("Email: %s", u.email);
-        gotoxy(25, 13);
-        printf("Data Nasc.: %s", u.data_nascimento);
-    } else {
-        gotoxy(25, 9);
-        printf("Usuario nao encontrado.");
+    gotoxy(71, 9);
+    for (i = 0; i < 76; i++) printf("%c", 205);
+
+    rewind(arq);
+    linhaAtual = linhaInicial + 1;
+
+    while (fread(&u, size, 1, arq) == 1){
+        if (u.ativo && strcmp(u.nome, nomeBusca) == 0){
+            encontrou = 1;
+
+            gotoxy(71, linhaAtual++);
+            printf("%-4d %-24s %-27s %-12s",u.id, u.nome, u.email, u.data_nascimento);
+            if (linhaAtual > linhaFinal){
+                gotoxy(92, 21);
+                setColor(AMARELINHO);
+                printf("ENTER - Proxima pagina");
+                setColor(BRANCO);
+
+                getch();
+
+                limparArea(71, linhaInicial + 1, 76,linhaFinal - linhaInicial);
+
+                gotoxy(92, 21);
+                printf("                      ");
+
+                linhaAtual = linhaInicial + 1;
+            }
+        }
     }
 
-    gotoxy(30, 15);
+    if (!encontrou){
+        gotoxy(85, 13);
+        setColor(VERMELHO);
+        printf("Nenhum usuario encontrado");
+        setColor(BRANCO);
+    }
+
+    gotoxy(92, 21);
+    setColor(AMARELINHO);
     system("pause");
+    setColor(BRANCO);
 }
+
 
 void menuUsers(){
     FILE *arqU = fopen("usuarios.dat", "rb+");
