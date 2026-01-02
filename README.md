@@ -19,7 +19,7 @@ O projeto foi desenvolvido com foco acadêmico, visando consolidar conhecimentos
 
 ---
 
-## ⚙️ Funcionalidades
+## Funcionalidades
 
 -  Cadastro de usuários
 -  Cadastro de filmes
